@@ -6,7 +6,7 @@ import { db, auth } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 
-const ADMIN_EMAIL = "a4Anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
+const ADMIN_EMAIL = "a4anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
 
 export default function ActivityTracker() {
   const params = useParams();

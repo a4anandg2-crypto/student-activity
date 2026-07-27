@@ -6,7 +6,7 @@ import { collection, addDoc, getDocs, doc, setDoc, getDoc } from "firebase/fires
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 
-const ADMIN_EMAIL = "a4Anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
+const ADMIN_EMAIL = "a4anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
 
 export default function HomeDashboard() {
   const [user, setUser] = useState<User | null>(null);
