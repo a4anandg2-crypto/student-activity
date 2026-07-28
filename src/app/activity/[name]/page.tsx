@@ -98,7 +98,7 @@ export default function ActivityTracker() {
             <div className="flex items-center gap-2 mb-1">
               <img src="/logo.svg" alt="AS Logo" className="w-7 h-7 rounded-lg shadow-sm" />
               <button onClick={() => router.push(`/class/${encodeURIComponent(selectedClass)}`)} className="text-indigo-600 font-bold text-sm hover:underline">
-                &larr; Back to Class {selectedClass}
+                &larr; Back  {selectedClass}
               </button>
             </div>
             <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 break-words">Tracker: <span className="text-indigo-600">{activityName}</span></h1>

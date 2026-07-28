@@ -123,7 +123,7 @@ export default function HomeDashboard() {
       <header className="bg-white shadow-sm p-3 sm:p-4 flex flex-wrap justify-between items-center gap-3 mb-6 sm:mb-8 border-b">
         <div className="flex items-center gap-2">
           <img src="/logo.svg" alt="AS Logo" className="w-9 h-9 rounded-xl shadow-sm" />
-          <span className="text-xl sm:text-2xl font-extrabold text-indigo-600">AS Tracker</span>
+          <span className="text-xl sm:text-2xl font-extrabold text-indigo-600"></span>
         </div>
         <div>
           {user ? (
