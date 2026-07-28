@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { db, auth, googleProvider } from "@/lib/firebase";
-import { collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 
-const ADMIN_EMAIL = "a4anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
+const ADMIN_EMAIL = "a4anandg2@gmail.com";
 
 export default function HomeDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const isAdmin = user && user.email === ADMIN_EMAIL;
 
-  const [activeTab, setActiveTab] = useState("activities");
+  const [activeTab, setActiveTab] = useState("classes");
   const [students, setStudents] = useState<any[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
   
@@ -65,6 +65,14 @@ export default function HomeDashboard() {
     setName(""); setRoll(""); fetchStudents(); alert("Student Added!");
   };
 
+  const deleteStudent = async (id: string) => {
+    if (!isAdmin) return;
+    if (confirm("Are you sure you want to delete this student?")) {
+      await deleteDoc(doc(db, "students", id));
+      fetchStudents();
+    }
+  };
+
   const startEditing = (s: any) => {
     setEditingId(s.id);
     setEditName(s.name);
@@ -85,11 +93,11 @@ export default function HomeDashboard() {
     });
     setEditingId(null);
     fetchStudents();
-    alert("Student Details Updated Successfully!");
+    alert("Student Updated Successfully!");
   };
 
   const addNewActivity = async () => {
-    if (!isAdmin) return alert("Unauthorized! Only Admin can add activities.");
+    if (!isAdmin) return alert("Unauthorized!");
     if (!newActivity.trim()) return;
     const updatedList = [...activities, newActivity.trim()];
     await setDoc(doc(db, "settings", "activities"), { list: updatedList });
@@ -97,10 +105,26 @@ export default function HomeDashboard() {
     setNewActivity("");
   };
 
+  const deleteActivity = async (actToDelete: string) => {
+    if (!isAdmin) return;
+    if (confirm(`Delete activity "${actToDelete}"?`)) {
+      const updatedList = activities.filter(act => act !== actToDelete);
+      await setDoc(doc(db, "settings", "activities"), { list: updatedList });
+      setActivities(updatedList);
+    }
+  };
+
+  // Get unique classes from students list (fallback to ["10th"] if empty)
+  const uniqueClasses = Array.from(new Set(students.map(s => s.className || "10th")));
+  if (uniqueClasses.length === 0) uniqueClasses.push("10th");
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-10">
       <header className="bg-white shadow-sm p-3 sm:p-4 flex flex-wrap justify-between items-center gap-3 mb-6 sm:mb-8 border-b">
-        <h1 className="text-xl sm:text-2xl font-extrabold text-indigo-600">AS</h1>
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="AS Logo" className="w-9 h-9 rounded-xl shadow-sm" />
+          <span className="text-xl sm:text-2xl font-extrabold text-indigo-600">AS Tracker</span>
+        </div>
         <div>
           {user ? (
             <div className="flex items-center gap-2 sm:gap-4">
@@ -120,34 +144,45 @@ export default function HomeDashboard() {
 
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden border border-slate-100 mx-3 sm:mx-auto">
         <div className="flex bg-slate-800 text-white text-sm sm:text-lg">
-          <button className={`flex-1 p-3 sm:p-4 font-semibold transition ${activeTab === "activities" ? "bg-indigo-600" : "hover:bg-slate-700"}`} onClick={() => setActiveTab("activities")}>
-            Activities
+          <button className={`flex-1 p-3 sm:p-4 font-semibold transition ${activeTab === "classes" ? "bg-indigo-600" : "hover:bg-slate-700"}`} onClick={() => setActiveTab("classes")}>
+            Select Class
           </button>
           <button className={`flex-1 p-3 sm:p-4 font-semibold transition ${activeTab === "students" ? "bg-indigo-600" : "hover:bg-slate-700"}`} onClick={() => setActiveTab("students")}>
-            Students
+            Manage Students
           </button>
         </div>
 
         <div className="p-4 sm:p-8">
-          {activeTab === "activities" && (
+          {activeTab === "classes" && (
             <div>
               {isAdmin && (
-                <div className="flex flex-col sm:flex-row gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border">
-                  <input type="text" placeholder="New Activity Name (e.g. Nails)" value={newActivity} onChange={e => setNewActivity(e.target.value)} className="border p-2.5 rounded-lg flex-1 text-sm sm:text-base outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <button onClick={addNewActivity} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-md transition">+ Create</button>
+                <div className="mb-8 bg-slate-50 p-4 rounded-lg border">
+                  <h3 className="text-sm font-bold text-slate-700 mb-2">Global Activity Manager</h3>
+                  <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                    <input type="text" placeholder="New Activity Name (e.g. Nails)" value={newActivity} onChange={e => setNewActivity(e.target.value)} className="border p-2.5 rounded-lg flex-1 text-sm outline-none" />
+                    <button onClick={addNewActivity} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-md">+ Add Activity</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {activities.map((act, i) => (
+                      <span key={i} className="bg-white border px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm">
+                        {act}
+                        <button onClick={() => deleteActivity(act)} className="text-red-500 hover:text-red-700 font-extrabold">×</button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-700 border-b pb-2">Select Activity to Track</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-700 border-b pb-2">Select Class Card</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                {activities.map((act, idx) => (
-                  <Link key={idx} href={`/activity/${encodeURIComponent(act)}`}>
-                    <div className="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 p-5 sm:p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer text-center font-bold text-lg sm:text-xl h-full flex items-center justify-center">
-                      {act}
+                {uniqueClasses.map((cls, idx) => (
+                  <Link key={idx} href={`/class/${encodeURIComponent(cls)}`}>
+                    <div className="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer text-center font-bold text-xl h-32 flex flex-col items-center justify-center">
+                      <span>Class {cls}</span>
+                      <span className="text-xs font-normal opacity-80 mt-1">Click to view activities</span>
                     </div>
                   </Link>
                 ))}
-                {activities.length === 0 && <p className="text-slate-400 text-sm">No activities added yet.</p>}
               </div>
             </div>
           )}
@@ -161,16 +196,16 @@ export default function HomeDashboard() {
                     <div className="w-full sm:flex-1 min-w-[180px]">
                       <input required type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} className="w-full border p-2.5 sm:p-3 rounded-lg text-sm" />
                     </div>
-                    <div className="w-[48%]: sm:w-24">
+                    <div className="w-[48%] sm:w-24">
                       <input required type="number" placeholder="Roll" value={roll} onChange={e => setRoll(e.target.value)} className="w-full border p-2.5 sm:p-3 rounded-lg text-sm" />
                     </div>
-                    <div className="w-[48%]: sm:w-28">
+                    <div className="w-[48%] sm:w-28">
                       <input required type="text" placeholder="Class" value={className} onChange={e => setClassName(e.target.value)} className="w-full border p-2.5 sm:p-3 rounded-lg text-sm" />
                     </div>
-                    <div className="w-[48%]: sm:w-24">
+                    <div className="w-[48%] sm:w-24">
                       <input required type="text" placeholder="Sec" value={section} onChange={e => setSection(e.target.value.toUpperCase())} className="w-full border p-2.5 sm:p-3 rounded-lg text-sm" maxLength={1} />
                     </div>
-                    <div className="w-[48%]: sm:w-32">
+                    <div className="w-[48%] sm:w-32">
                       <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border p-2.5 sm:p-3 rounded-lg text-sm">
                         <option value="Boy">Boy</option>
                         <option value="Girl">Girl</option>
@@ -208,14 +243,15 @@ export default function HomeDashboard() {
                     ) : (
                       <div>
                         <div className="flex justify-between items-start gap-2">
-                          <span className="font-bold text-base sm:text-lg text-slate-800 break-words">{s.name}</span>
+                          <span className="font-bold text-base text-slate-800 break-words">{s.name}</span>
                           {isAdmin && (
-                            <button onClick={() => startEditing(s)} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200 shrink-0">
-                              Edit
-                            </button>
+                            <div className="flex gap-1 shrink-0">
+                              <button onClick={() => startEditing(s)} className="text-indigo-600 bg-indigo-50 px-2 py-1 rounded text-xs font-bold border border-indigo-200">Edit</button>
+                              <button onClick={() => deleteStudent(s.id)} className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold border border-red-200">Del</button>
+                            </div>
                           )}
                         </div>
-                        <div className="text-xs sm:text-sm text-slate-500 mt-3 flex flex-wrap gap-2 justify-between border-t pt-2">
+                        <div className="text-xs text-slate-500 mt-3 flex flex-wrap gap-2 justify-between border-t pt-2">
                           <span className="bg-slate-100 px-2 py-0.5 rounded">Roll: {s.roll}</span>
                           <span className="bg-slate-100 px-2 py-0.5 rounded">Class: {s.className || "10th"} ({s.section})</span>
                           <span className="bg-slate-100 px-2 py-0.5 rounded">{s.gender}</span>

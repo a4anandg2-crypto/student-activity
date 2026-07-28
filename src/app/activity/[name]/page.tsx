@@ -6,7 +6,7 @@ import { db, auth } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 
-const ADMIN_EMAIL = "a4anandg2@gmail.com"; // <-- Yahan apna real Gmail daal dein
+const ADMIN_EMAIL = "a4anandg2@gmail.com";
 
 export default function ActivityTracker() {
   const params = useParams();
@@ -31,6 +31,11 @@ export default function ActivityTracker() {
   }, []);
 
   useEffect(() => {
+    // Read class query param if passed from Class Page
+    const urlParams = new URLSearchParams(window.location.search);
+    const cls = urlParams.get("class");
+    if (cls) setSelectedClass(cls);
+
     fetchStudents();
   }, []);
 
@@ -63,7 +68,7 @@ export default function ActivityTracker() {
   };
 
   const saveAttendance = async () => {
-    if (!isAdmin) return alert("Unauthorized! Only Admin can save.");
+    if (!isAdmin) return alert("Unauthorized!");
     for (const studentId of Object.keys(attendance)) {
       if (attendance[studentId] !== undefined) {
         const recordRef = doc(db, `attendance_${date}`, studentId);
@@ -90,10 +95,13 @@ export default function ActivityTracker() {
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8 pb-4 border-b">
           <div>
-            <button onClick={() => router.push("/")} className="text-indigo-600 font-bold text-sm mb-1 block hover:underline">
-              &larr; Back to Dashboard
-            </button>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 break-words">Tracking: <span className="text-indigo-600">{activityName}</span></h1>
+            <div className="flex items-center gap-2 mb-1">
+              <img src="/logo.svg" alt="AS Logo" className="w-7 h-7 rounded-lg shadow-sm" />
+              <button onClick={() => router.push(`/class/${encodeURIComponent(selectedClass)}`)} className="text-indigo-600 font-bold text-sm hover:underline">
+                &larr; Back to Class {selectedClass}
+              </button>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 break-words">Tracker: <span className="text-indigo-600">{activityName}</span></h1>
           </div>
           <div className="w-full sm:w-auto text-left sm:text-right">
             {!isAdmin && <p className="text-orange-500 font-bold text-xs mb-1">View Only Mode</p>}
