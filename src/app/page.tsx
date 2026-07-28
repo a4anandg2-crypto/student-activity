@@ -136,7 +136,7 @@ export default function HomeDashboard() {
           ) : (
             <div className="flex items-center gap-2 sm:gap-4">
               <span className="text-xs sm:text-sm font-semibold text-gray-500 bg-gray-100 px-2.5 sm:px-3 py-1 rounded-full">View Only</span>
-              <button onClick={login} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium">Admin Login</button>
+              <button onClick={login} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium">Admin</button>
             </div>
           )}
         </div>
@@ -173,7 +173,7 @@ export default function HomeDashboard() {
                 </div>
               )}
 
-              <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-700 border-b pb-2">Select Class Card</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-700 border-b pb-2">Select Class</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 {uniqueClasses.map((cls, idx) => (
                   <Link key={idx} href={`/class/${encodeURIComponent(cls)}`}>

@@ -31,7 +31,7 @@ export default function ClassActivitiesPage() {
         <div className="flex items-center gap-3 mb-6 pb-4 border-b">
           <img src="/logo.svg" alt="AS Logo" className="w-8 h-8 rounded-lg shadow-sm" />
           <button onClick={() => router.push("/")} className="text-indigo-600 font-bold text-sm hover:underline">
-            &larr; Back to Classes
+            &larr; Back 
           </button>
         </div>
 
