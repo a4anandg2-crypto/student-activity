@@ -23,13 +23,16 @@ export default function HomeDashboard() {
   const [section, setSection] = useState("A");
   const [gender, setGender] = useState("Boy");
 
-  // Edit Student States
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editRoll, setEditRoll] = useState<number | "">("");
   const [editClass, setEditClass] = useState("");
   const [editSection, setEditSection] = useState("");
   const [editGender, setEditGender] = useState("");
+
+  const [filterClass, setFilterClass] = useState("All");
+  const [filterSection, setFilterSection] = useState("All");
+  const [filterGender, setFilterGender] = useState("All");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => setUser(currentUser));
@@ -114,16 +117,22 @@ export default function HomeDashboard() {
     }
   };
 
-  // Get unique classes from students list (fallback to ["10th"] if empty)
   const uniqueClasses = Array.from(new Set(students.map(s => s.className || "10th")));
   if (uniqueClasses.length === 0) uniqueClasses.push("10th");
+  const uniqueSections = Array.from(new Set(students.map(s => s.section))).sort();
+
+  const displayedStudents = students.filter(s => {
+    const matchClass = filterClass === "All" || (s.className || "10th") === filterClass;
+    const matchSection = filterSection === "All" || s.section === filterSection;
+    const matchGender = filterGender === "All" || s.gender === filterGender;
+    return matchClass && matchSection && matchGender;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-10">
       <header className="bg-white shadow-sm p-3 sm:p-4 flex flex-wrap justify-between items-center gap-3 mb-6 sm:mb-8 border-b">
         <div className="flex items-center gap-2">
           <img src="/logo.svg" alt="AS Logo" className="w-9 h-9 rounded-xl shadow-sm" />
-          <span className="text-xl sm:text-2xl font-extrabold text-indigo-600"></span>
         </div>
         <div>
           {user ? (
@@ -216,10 +225,37 @@ export default function HomeDashboard() {
                 </div>
               )}
               
-              <h3 className="text-lg sm:text-xl font-bold mb-4 text-slate-800 border-b pb-2">Registered Students ({students.length})</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b pb-2">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-800">Registered Students ({displayedStudents.length})</h3>
+              </div>
+
+              <div className="flex flex-wrap gap-3 mb-6 bg-indigo-50 p-3 sm:p-4 rounded-lg border border-indigo-100 items-center shadow-sm">
+                <div className="flex-1 min-w-[100px]">
+                  <label className="block text-[10px] sm:text-xs font-bold text-indigo-500 uppercase mb-1">Class</label>
+                  <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="All">All</option>
+                    {uniqueClasses.map(cls => <option key={cls} value={cls}>{cls}</option>)}
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[100px]">
+                  <label className="block text-[10px] sm:text-xs font-bold text-indigo-500 uppercase mb-1">Section</label>
+                  <select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="All">All</option>
+                    {uniqueSections.map(sec => <option key={sec} value={sec}>{sec}</option>)}
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[130px]">
+                  <label className="block text-[10px] sm:text-xs font-bold text-indigo-500 uppercase mb-1">Gender</label>
+                  <select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="All">All (Both)</option>
+                    <option value="Boy">Boys</option>
+                    <option value="Girl">Girls</option>
+                  </select>
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {students.map(s => (
+                {displayedStudents.map(s => (
                   <div key={s.id} className="border p-4 rounded-lg bg-white shadow-sm flex flex-col justify-between">
                     {editingId === s.id ? (
                       <div className="space-y-3">
@@ -243,6 +279,7 @@ export default function HomeDashboard() {
                     ) : (
                       <div>
                         <div className="flex justify-between items-start gap-2">
+                          {/* Yahan se bracket wala section hata diya hai taaki UI clean rahe */}
                           <span className="font-bold text-base text-slate-800 break-words">{s.name}</span>
                           {isAdmin && (
                             <div className="flex gap-1 shrink-0">
@@ -251,6 +288,7 @@ export default function HomeDashboard() {
                             </div>
                           )}
                         </div>
+                        {/* Section yahan bottom tags me clearly dikh hi raha hai! */}
                         <div className="text-xs text-slate-500 mt-3 flex flex-wrap gap-2 justify-between border-t pt-2">
                           <span className="bg-slate-100 px-2 py-0.5 rounded">Roll: {s.roll}</span>
                           <span className="bg-slate-100 px-2 py-0.5 rounded">Class: {s.className || "10th"} ({s.section})</span>
@@ -260,6 +298,7 @@ export default function HomeDashboard() {
                     )}
                   </div>
                 ))}
+                {displayedStudents.length === 0 && <p className="text-slate-500 col-span-full">No students found matching these filters.</p>}
               </div>
             </div>
           )}

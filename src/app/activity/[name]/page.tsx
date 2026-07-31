@@ -22,8 +22,8 @@ export default function ActivityTracker() {
   
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedClass, setSelectedClass] = useState("10th");
-  const [selectedSection, setSelectedSection] = useState("A");
-  const [genderFilter, setGenderFilter] = useState("Boy");
+  const [selectedSection, setSelectedSection] = useState("All");
+  const [genderFilter, setGenderFilter] = useState("All");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => setUser(currentUser));
@@ -31,7 +31,6 @@ export default function ActivityTracker() {
   }, []);
 
   useEffect(() => {
-    // Read class query param if passed from Class Page
     const urlParams = new URLSearchParams(window.location.search);
     const cls = urlParams.get("class");
     if (cls) setSelectedClass(cls);
@@ -46,6 +45,7 @@ export default function ActivityTracker() {
   const fetchStudents = async () => {
     const querySnapshot = await getDocs(collection(db, "students"));
     const stds = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Automatically sort by Roll Number
     stds.sort((a: any, b: any) => a.roll - b.roll);
     setStudents(stds);
   };
@@ -83,10 +83,12 @@ export default function ActivityTracker() {
     alert(`${activityName} Record Saved Successfully for ${date}!`);
   };
 
+  const uniqueSections = Array.from(new Set(students.filter(s => (s.className || "10th") === selectedClass).map(s => s.section))).sort();
+
   const filteredStudents = students.filter(s => 
     (s.className || "10th") === selectedClass && 
-    s.section === selectedSection && 
-    s.gender === genderFilter
+    (selectedSection === "All" || s.section === selectedSection) && 
+    (genderFilter === "All" || s.gender === genderFilter)
   );
 
   return (
@@ -98,7 +100,7 @@ export default function ActivityTracker() {
             <div className="flex items-center gap-2 mb-1">
               <img src="/logo.svg" alt="AS Logo" className="w-7 h-7 rounded-lg shadow-sm" />
               <button onClick={() => router.push(`/class/${encodeURIComponent(selectedClass)}`)} className="text-indigo-600 font-bold text-sm hover:underline">
-                &larr; Back {selectedClass}
+                &larr; Back to Class {selectedClass}
               </button>
             </div>
             <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 break-words">Tracker: <span className="text-indigo-600">{activityName}</span></h1>
@@ -109,40 +111,61 @@ export default function ActivityTracker() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 bg-slate-50 p-3 sm:p-4 rounded-lg border items-center">
-          <div className="w-[45%] sm:w-auto">
+        <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 bg-slate-50 p-3 sm:p-4 rounded-lg border items-center shadow-sm">
+          <div className="flex-1 min-w-[100px]">
             <label className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Class</label>
-            <input type="text" value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="border p-2 rounded-lg font-bold text-sm w-full sm:w-28 bg-white" />
+            <input type="text" value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400" />
           </div>
-          <div className="w-[45%] sm:w-auto">
+          <div className="flex-1 min-w-[100px]">
             <label className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Section</label>
-            <input type="text" value={selectedSection} onChange={e => setSelectedSection(e.target.value.toUpperCase())} className="border p-2 rounded-lg font-bold text-sm w-full sm:w-20 bg-white" maxLength={1} />
+            <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="All">All</option>
+              {uniqueSections.map(sec => <option key={sec} value={sec}>{sec}</option>)}
+            </select>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto pt-2 sm:pt-0">
-            <button onClick={() => setGenderFilter("Boy")} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition shadow-sm ${genderFilter === "Boy" ? "bg-indigo-600 text-white" : "bg-white text-slate-600 border"}`}>Boys</button>
-            <button onClick={() => setGenderFilter("Girl")} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition shadow-sm ${genderFilter === "Girl" ? "bg-pink-500 text-white" : "bg-white text-slate-600 border"}`} >Girls</button>
+          <div className="flex-1 min-w-[130px]">
+            <label className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Gender</label>
+            <select value={genderFilter} onChange={e => setGenderFilter(e.target.value)} className="w-full border p-2 rounded-lg font-bold text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="All">All (Boys & Girls)</option>
+              <option value="Boy">Boys</option>
+              <option value="Girl">Girls</option>
+            </select>
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
           <table className="w-full text-left border-collapse bg-white text-sm">
             <thead>
               <tr className="bg-slate-800 text-white">
                 <th className="p-3 sm:p-4 font-semibold text-xs sm:text-sm w-14">Roll</th>
                 <th className="p-3 sm:p-4 font-semibold text-xs sm:text-sm">Name</th>
+                {/* Yahan par Naya Column sirf Tabhi aayega jab ALL selected ho */}
+                {selectedSection === "All" && (
+                  <th className="p-3 sm:p-4 font-semibold text-xs sm:text-sm text-center w-16">Sec</th>
+                )}
                 <th className="p-3 sm:p-4 font-semibold text-xs sm:text-sm text-center">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.length === 0 ? (
-                <tr><td colSpan={3} className="p-6 text-center text-slate-400 text-sm">No students found in Class {selectedClass} - Sec {selectedSection} ({genderFilter}s).</td></tr>
+                <tr>
+                  <td colSpan={selectedSection === "All" ? 4 : 3} className="p-6 text-center text-slate-400 text-sm">
+                    No students found matching these filters.
+                  </td>
+                </tr>
               ) : (
                 filteredStudents.map((s, index) => (
                   <tr key={s.id} className={`${index % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-indigo-50 transition border-b border-slate-100`}>
                     <td className="p-3 sm:p-4 font-bold text-slate-600 text-xs sm:text-sm">{s.roll}</td>
                     <td className="p-3 sm:p-4 font-bold text-slate-800 text-xs sm:text-sm break-words">{s.name}</td>
+                    
+                    {/* Alag se Column Data */}
+                    {selectedSection === "All" && (
+                      <td className="p-3 sm:p-4 font-bold text-indigo-600 text-xs sm:text-sm text-center">
+                        {s.section}
+                      </td>
+                    )}
+
                     <td className="p-3 sm:p-4">
                       <div className="flex justify-center gap-3">
                         <button
@@ -180,7 +203,7 @@ export default function ActivityTracker() {
 
         {isAdmin && (
           <button onClick={saveAttendance} className="mt-6 sm:mt-8 w-full bg-indigo-600 text-white font-extrabold text-base sm:text-lg py-3.5 sm:py-4 rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-300">
-            Save Class {selectedClass} Sec {selectedSection} - {genderFilter}s Record
+            Save Record
           </button>
         )}
       </div>
